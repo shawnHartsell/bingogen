@@ -5,7 +5,7 @@
 **Status**: Draft  
 **Input**: User description: "Once a bingo card is created we need to be able to save it. We also need to be able to save updates like adding notes and checking boxes. This means we'll also need to have a page to view an individual bingo card by id. We might also want to consider a view that shows a list of bingo cards. Or maybe we could add a list as a side bar in the view bingo card view."
 
-## User Scenarios & Testing *(mandatory)*
+## User Scenarios & Testing _(mandatory)_
 
 ### User Story 1 - Save a Newly Created Bingo Card (Priority: P1)
 
@@ -91,7 +91,7 @@ A user who has created multiple bingo cards can see a list of their saved cards 
 - What happens when a card is deleted or corrupted in storage? The card list gracefully omits it and accessing it by URL shows the "not found" state.
 - What happens when a user deletes the currently active card? The system switches to the next available card, or shows the empty state if no cards remain.
 
-## Requirements *(mandatory)*
+## Requirements _(mandatory)_
 
 ### Functional Requirements
 
@@ -116,7 +116,7 @@ A user who has created multiple bingo cards can see a list of their saved cards 
 - **Bingo Card**: A saved card identified by a unique ID. Contains a user-provided title, an ordered set of 25 cells (including the free space), completion status of each cell, notes per cell, and the list of completed bingo lines. Includes metadata such as a creation timestamp.
 - **Card List**: A collection of all saved bingo cards belonging to the current user, displayed by title in the sidebar navigation.
 
-## Success Criteria *(mandatory)*
+## Success Criteria _(mandatory)_
 
 ### Measurable Outcomes
 
