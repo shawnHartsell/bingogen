@@ -17,6 +17,23 @@ export interface Cell {
   notes: string; // Markdown content, max 500 chars
 }
 
+// ─── Persisted Document ───────────────────────────────────
+export interface BingoCardDocument {
+  _id?: string; // MongoDB ObjectId as string
+  title: string;
+  cells: Cell[];
+  completedBingos: number[];
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// ─── Sidebar Projection ──────────────────────────────────
+export interface CardListItem {
+  _id: string;
+  title: string;
+  createdAt: Date;
+}
+
 // ─── Application State ───────────────────────────────────
 export interface AppState {
   // Phase 1: Goal entry
@@ -29,6 +46,10 @@ export interface AppState {
   // Phase 3: Bingo tracking
   completedBingos: number[]; // indices of completed bingo lines (0–11)
   newBingos: number[]; // lines completed by the LAST toggle only (animation trigger)
+
+  // Phase 4: Persistence
+  cardId: string | null; // MongoDB _id of the active card (null before first save)
+  cardTitle: string; // Editable card title
 }
 
 // ─── Actions ──────────────────────────────────────────────
@@ -39,4 +60,6 @@ export type AppAction =
   | { type: "TOGGLE_COMPLETION"; cellIndex: number }
   | { type: "UPDATE_NOTES"; cellIndex: number; notes: string }
   | { type: "UPDATE_GOAL_TITLE"; cellIndex: number; title: string }
+  | { type: "SET_CARD_TITLE"; title: string }
+  | { type: "LOAD_CARD"; card: BingoCardDocument }
   | { type: "RESET" };

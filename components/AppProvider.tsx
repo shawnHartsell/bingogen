@@ -28,6 +28,8 @@ const initialState: AppState = {
   cardGenerated: false,
   completedBingos: [],
   newBingos: [],
+  cardId: null,
+  cardTitle: "",
 };
 
 // ─── Helpers ──────────────────────────────────────────────
@@ -53,6 +55,8 @@ function buildCells(goals: string[]): Cell[] {
 
   return cells;
 }
+
+export { buildCells as buildCellsFromGoals };
 
 // ─── Reducer ──────────────────────────────────────────────
 function appReducer(state: AppState, action: AppAction): AppState {
@@ -81,6 +85,9 @@ function appReducer(state: AppState, action: AppAction): AppState {
 
     case "GENERATE_CARD": {
       if (state.goals.length !== GOALS_REQUIRED) {
+        return state;
+      }
+      if (!state.cardTitle.trim()) {
         return state;
       }
       return {
@@ -140,6 +147,24 @@ function appReducer(state: AppState, action: AppAction): AppState {
         cells: state.cells.map((cell, i) =>
           i === cellIndex ? { ...cell, goalTitle: trimmed } : cell,
         ),
+      };
+    }
+
+    case "SET_CARD_TITLE": {
+      return { ...state, cardTitle: action.title };
+    }
+
+    case "LOAD_CARD": {
+      const { card } = action;
+      return {
+        ...state,
+        cells: card.cells,
+        completedBingos: card.completedBingos,
+        cardGenerated: true,
+        cardId: card._id ?? null,
+        cardTitle: card.title,
+        newBingos: [],
+        goals: card.cells.filter((c) => !c.isFreeSpace).map((c) => c.goalTitle),
       };
     }
 
