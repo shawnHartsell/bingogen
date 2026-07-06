@@ -135,6 +135,32 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   }, [collectionState.hydrated, collectionState.cards, activeCard]);
 
+  // Delete a card through the port as soon as it leaves the in-memory
+  // collection, so it does not reappear on reload. Compares against the
+  // previous render's id set (tracked via a ref) rather than the
+  // last-saved-card ref above, since a deleted card is never "saved" again.
+  const knownCardIdsRef = useRef<Set<string> | null>(null);
+  useEffect(() => {
+    if (!collectionState.hydrated) return;
+    const currentIds = new Set(Object.keys(collectionState.cards));
+    const previousIds = knownCardIdsRef.current;
+    if (previousIds) {
+      for (const id of previousIds) {
+        if (!currentIds.has(id)) {
+          delete lastSavedRef.current[id];
+          repository.delete(id).catch((err) => {
+            dispatch({
+              type: "SAVE_ERROR",
+              message:
+                err instanceof Error ? err.message : "Failed to delete card.",
+            });
+          });
+        }
+      }
+    }
+    knownCardIdsRef.current = currentIds;
+  }, [collectionState.hydrated, collectionState.cards]);
+
   // Persist which card is active whenever it changes.
   useEffect(() => {
     if (!collectionState.hydrated) return;
