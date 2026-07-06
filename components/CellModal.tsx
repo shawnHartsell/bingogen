@@ -20,6 +20,7 @@ export function CellModal({
 }: CellModalProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const [draft, setDraft] = useState("");
+  const [loadedNotesFor, setLoadedNotesFor] = useState<string | null>(null);
 
   // Sync dialog open/close with the `open` prop
   useEffect(() => {
@@ -33,12 +34,14 @@ export function CellModal({
     }
   }, [open]);
 
-  // Load draft when cell changes or modal opens
-  useEffect(() => {
-    if (open && cell) {
-      setDraft(cell.notes);
-    }
-  }, [open, cell]);
+  // Load draft when cell changes or modal opens. Adjusted during render
+  // (per React's "you might not need an effect" guidance) rather than in a
+  // useEffect, to avoid a cascading-render lint violation.
+  const cellKey = cell ? `${cell.row}-${cell.col}` : null;
+  if (open && cell && loadedNotesFor !== cellKey) {
+    setDraft(cell.notes);
+    setLoadedNotesFor(cellKey);
+  }
 
   function handleBackdropClick(e: React.MouseEvent<HTMLDialogElement>) {
     if (e.target === e.currentTarget) {

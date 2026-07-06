@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useApp } from "@/components/AppProvider";
 import { GoalInput } from "@/components/GoalInput";
@@ -12,6 +13,14 @@ export default function GoalEntryPage() {
   const router = useRouter();
 
   const isReady = state.goals.length === GOALS_REQUIRED;
+
+  // A reload with a persisted active card restores straight to the board -
+  // no explicit save action, no re-entering goals.
+  useEffect(() => {
+    if (state.hydrated && state.activeCardId) {
+      router.replace("/card");
+    }
+  }, [state.hydrated, state.activeCardId, router]);
 
   function handleGenerate() {
     dispatch({ type: "GENERATE_CARD" });
