@@ -9,21 +9,23 @@ import { CellModal } from "@/components/CellModal";
 import { TOTAL_BINGO_LINES } from "@/lib/types";
 
 export default function CardPage() {
-  const { state, dispatch } = useApp();
+  const { state, dispatch, activeCard } = useApp();
   const router = useRouter();
   const [selectedCellIndex, setSelectedCellIndex] = useState<number | null>(
     null,
   );
 
-  // Route guard: redirect to goal entry if no card generated
+  // Route guard: redirect to goal entry once rehydration has finished and
+  // there is still no active card. Waiting on `hydrated` avoids bouncing
+  // back to "/" while the persisted card is still loading on mount.
   useEffect(() => {
-    if (!state.cardGenerated) {
+    if (state.hydrated && !activeCard) {
       router.replace("/");
     }
-  }, [state.cardGenerated, router]);
+  }, [state.hydrated, activeCard, router]);
 
   function handleCellClick(cellIndex: number) {
-    const cell = state.cells[cellIndex];
+    const cell = activeCard?.cells[cellIndex];
     if (cell && !cell.isFreeSpace) {
       setSelectedCellIndex(cellIndex);
     }
@@ -43,12 +45,12 @@ export default function CardPage() {
     dispatch({ type: "UPDATE_GOAL_TITLE", cellIndex, title });
   }
 
-  if (!state.cardGenerated) {
+  if (!activeCard) {
     return null;
   }
 
   const selectedCell =
-    selectedCellIndex !== null ? state.cells[selectedCellIndex] : null;
+    selectedCellIndex !== null ? activeCard.cells[selectedCellIndex] : null;
 
   return (
     <main className="min-h-screen flex flex-col items-center px-4 py-8 sm:py-12">
@@ -56,7 +58,7 @@ export default function CardPage() {
         {/* Header */}
         <div className="text-center space-y-1">
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
-            Your Bingo Card
+            {activeCard.name}
           </h1>
           <p className="text-xs text-zinc-500">
             Double-click a cell to edit its goal
@@ -66,15 +68,15 @@ export default function CardPage() {
         {/* Bingo Counter */}
         <div className="flex justify-center">
           <BingoCounter
-            count={state.completedBingos.length}
+            count={activeCard.completedBingos.length}
             total={TOTAL_BINGO_LINES}
           />
         </div>
 
         {/* Card Grid */}
         <BingoCard
-          cells={state.cells}
-          completedBingos={state.completedBingos}
+          cells={activeCard.cells}
+          completedBingos={activeCard.completedBingos}
           newBingos={state.newBingos}
           onCellClick={handleCellClick}
           onToggleCompletion={handleToggleCompletion}

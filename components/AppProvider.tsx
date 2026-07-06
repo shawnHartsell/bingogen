@@ -3,6 +3,7 @@
 import {
   createContext,
   useContext,
+  useEffect,
   useReducer,
   type ReactNode,
   type Dispatch,
@@ -10,7 +11,9 @@ import {
 import {
   type AppState,
   type AppAction,
+  type BingoCard,
   type Cell,
+  CURRENT_SCHEMA_VERSION,
   GOALS_REQUIRED,
   MAX_GOAL_LENGTH,
   MAX_NOTES_LENGTH,
@@ -20,14 +23,16 @@ import {
 } from "@/lib/types";
 import { shuffle } from "@/lib/shuffle";
 import { detectBingos, findNewBingos } from "@/lib/bingo";
+import { defaultCardName } from "@/lib/cardNaming";
+import { cardRepository } from "@/lib/persistence/localStorageCardRepository";
 
 // ─── Initial State ────────────────────────────────────────
 const initialState: AppState = {
   goals: [],
-  cells: [],
-  cardGenerated: false,
-  completedBingos: [],
+  cards: {},
+  activeCardId: null,
   newBingos: [],
+  hydrated: false,
 };
 
 // ─── Helpers ──────────────────────────────────────────────
@@ -55,7 +60,7 @@ function buildCells(goals: string[]): Cell[] {
 }
 
 // ─── Reducer ──────────────────────────────────────────────
-function appReducer(state: AppState, action: AppAction): AppState {
+export function appReducer(state: AppState, action: AppAction): AppState {
   switch (action.type) {
     case "ADD_GOAL": {
       const trimmed = action.goal.trim();
@@ -83,21 +88,33 @@ function appReducer(state: AppState, action: AppAction): AppState {
       if (state.goals.length !== GOALS_REQUIRED) {
         return state;
       }
+      const now = new Date();
+      const nowIso = now.toISOString();
+      const card: BingoCard = {
+        id: crypto.randomUUID(),
+        name: defaultCardName(now),
+        cells: buildCells(state.goals),
+        completedBingos: [],
+        createdAt: nowIso,
+        updatedAt: nowIso,
+        schemaVersion: CURRENT_SCHEMA_VERSION,
+      };
       return {
         ...state,
-        cells: buildCells(state.goals),
-        cardGenerated: true,
-        completedBingos: [],
+        cards: { ...state.cards, [card.id]: card },
+        activeCardId: card.id,
         newBingos: [],
       };
     }
 
     case "TOGGLE_COMPLETION": {
+      const active = getActiveCard(state);
+      if (!active) return state;
       const { cellIndex } = action;
       if (cellIndex < 0 || cellIndex >= TOTAL_CELLS) return state;
-      if (state.cells[cellIndex].isFreeSpace) return state;
+      if (active.cells[cellIndex].isFreeSpace) return state;
 
-      const newCells = state.cells.map((cell, i) =>
+      const newCells = active.cells.map((cell, i) =>
         i === cellIndex ? { ...cell, isCompleted: !cell.isCompleted } : cell,
       );
 
@@ -105,41 +122,68 @@ function appReducer(state: AppState, action: AppAction): AppState {
       const newCompletedBingos = detectBingos(completed);
       const newBingos = findNewBingos(
         newCompletedBingos,
-        state.completedBingos,
+        active.completedBingos,
       );
 
       return {
         ...state,
-        cells: newCells,
-        completedBingos: newCompletedBingos,
+        cards: updateActiveCard(state, active, {
+          cells: newCells,
+          completedBingos: newCompletedBingos,
+        }),
         newBingos,
       };
     }
 
     case "UPDATE_NOTES": {
+      const active = getActiveCard(state);
+      if (!active) return state;
       const { cellIndex, notes } = action;
       if (cellIndex < 0 || cellIndex >= TOTAL_CELLS) return state;
       const truncated = notes.slice(0, MAX_NOTES_LENGTH);
       return {
         ...state,
-        cells: state.cells.map((cell, i) =>
-          i === cellIndex ? { ...cell, notes: truncated } : cell,
-        ),
+        cards: updateActiveCard(state, active, {
+          cells: active.cells.map((cell, i) =>
+            i === cellIndex ? { ...cell, notes: truncated } : cell,
+          ),
+        }),
       };
     }
 
     case "UPDATE_GOAL_TITLE": {
+      const active = getActiveCard(state);
+      if (!active) return state;
       const { cellIndex, title } = action;
       if (cellIndex < 0 || cellIndex >= TOTAL_CELLS) return state;
-      if (state.cells[cellIndex].isFreeSpace) return state;
+      if (active.cells[cellIndex].isFreeSpace) return state;
       const trimmed = title.trim();
       if (trimmed.length === 0 || trimmed.length > MAX_GOAL_LENGTH)
         return state;
       return {
         ...state,
-        cells: state.cells.map((cell, i) =>
-          i === cellIndex ? { ...cell, goalTitle: trimmed } : cell,
-        ),
+        cards: updateActiveCard(state, active, {
+          cells: active.cells.map((cell, i) =>
+            i === cellIndex ? { ...cell, goalTitle: trimmed } : cell,
+          ),
+        }),
+      };
+    }
+
+    case "HYDRATE": {
+      const cards: Record<string, BingoCard> = {};
+      for (const card of action.cards) {
+        cards[card.id] = card;
+      }
+      const activeCardId =
+        action.activeCardId !== null && cards[action.activeCardId]
+          ? action.activeCardId
+          : null;
+      return {
+        ...state,
+        cards,
+        activeCardId,
+        hydrated: true,
       };
     }
 
@@ -152,19 +196,86 @@ function appReducer(state: AppState, action: AppAction): AppState {
   }
 }
 
+// ─── Selectors ────────────────────────────────────────────
+export function getActiveCard(state: AppState): BingoCard | null {
+  if (!state.activeCardId) return null;
+  return state.cards[state.activeCardId] ?? null;
+}
+
+function updateActiveCard(
+  state: AppState,
+  active: BingoCard,
+  changes: Partial<Pick<BingoCard, "cells" | "completedBingos" | "name">>,
+): Record<string, BingoCard> {
+  const updated: BingoCard = {
+    ...active,
+    ...changes,
+    updatedAt: new Date().toISOString(),
+  };
+  return { ...state.cards, [active.id]: updated };
+}
+
 // ─── Context ──────────────────────────────────────────────
 interface AppContextValue {
   state: AppState;
   dispatch: Dispatch<AppAction>;
+  activeCard: BingoCard | null;
 }
 
 const AppContext = createContext<AppContextValue | null>(null);
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(appReducer, initialState);
+  const activeCard = getActiveCard(state);
+
+  // Rehydrate the collection from the persistence port on mount, then
+  // restore whichever card was last active.
+  useEffect(() => {
+    let cancelled = false;
+    async function rehydrate() {
+      try {
+        const [cards, activeCardId] = await Promise.all([
+          cardRepository.listCards(),
+          cardRepository.getActiveCardId(),
+        ]);
+        if (!cancelled) {
+          dispatch({ type: "HYDRATE", cards, activeCardId });
+        }
+      } catch (err) {
+        // A failed rehydrate should never crash the app — start clean.
+        console.error("Failed to rehydrate card collection:", err);
+        if (!cancelled) {
+          dispatch({ type: "HYDRATE", cards: [], activeCardId: null });
+        }
+      }
+    }
+    rehydrate();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // Autosave: persist the active card and its id on every change, once
+  // rehydration has completed (so we never overwrite stored data with
+  // initial state before it has loaded).
+  useEffect(() => {
+    if (!state.hydrated) return;
+    if (!activeCard) {
+      cardRepository.setActiveCardId(null).catch((err) => {
+        console.error("Failed to persist active card id:", err);
+      });
+      return;
+    }
+    cardRepository.saveCard(activeCard).catch((err) => {
+      console.error("Failed to autosave card:", err);
+    });
+    cardRepository.setActiveCardId(activeCard.id).catch((err) => {
+      console.error("Failed to persist active card id:", err);
+    });
+  }, [state.hydrated, activeCard]);
 
   return (
-    <AppContext.Provider value={{ state, dispatch }}>
+    <AppContext.Provider value={{ state, dispatch, activeCard }}>
       {children}
     </AppContext.Provider>
   );
