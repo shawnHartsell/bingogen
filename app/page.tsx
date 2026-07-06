@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useApp } from "@/components/AppProvider";
 import { GoalInput } from "@/components/GoalInput";
@@ -12,6 +13,15 @@ export default function GoalEntryPage() {
   const router = useRouter();
 
   const isReady = state.goals.length === GOALS_REQUIRED;
+
+  // Restore-on-reload: if rehydration finds an already-generated active
+  // card, send the user straight back to their board instead of the empty
+  // goal-entry screen.
+  useEffect(() => {
+    if (state.hydrated && state.cardGenerated) {
+      router.replace("/card");
+    }
+  }, [state.hydrated, state.cardGenerated, router]);
 
   function handleGenerate() {
     dispatch({ type: "GENERATE_CARD" });
