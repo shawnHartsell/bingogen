@@ -15,12 +15,14 @@ export default function CardPage() {
     null,
   );
 
-  // Route guard: redirect to goal entry if no card generated
+  // Route guard: redirect to goal entry once hydration has completed and
+  // there is still no active card (avoids redirecting away from a
+  // reloaded, persisted card before rehydration has had a chance to run).
   useEffect(() => {
-    if (!state.cardGenerated) {
+    if (state.hydrated && !state.cardGenerated) {
       router.replace("/");
     }
-  }, [state.cardGenerated, router]);
+  }, [state.hydrated, state.cardGenerated, router]);
 
   function handleCellClick(cellIndex: number) {
     const cell = state.cells[cellIndex];
