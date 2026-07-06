@@ -50,7 +50,8 @@ export type AppAction =
   | { type: "HYDRATE"; cards: PersistedCard[]; activeCardId: string | null }
   | { type: "SAVE_ERROR"; message: string }
   | { type: "SET_ACTIVE_CARD"; id: string }
-  | { type: "NEW_CARD" };
+  | { type: "NEW_CARD" }
+  | { type: "RENAME_CARD"; id: string; name: string };
 
 // ─── Persistence ──────────────────────────────────────────
 // Current schema version for persisted cards. Bump whenever the shape of
@@ -87,6 +88,9 @@ export interface CollectionState {
   newBingos: number[]; // transient UI-only, not persisted
   hydrated: boolean;
   saveError: string | null;
+  // Transient, UI-only feedback for the most recent rejected rename
+  // attempt (e.g. a duplicate name). Not persisted.
+  renameError: { id: string; message: string } | null;
 }
 
 /**

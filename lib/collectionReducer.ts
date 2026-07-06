@@ -28,6 +28,7 @@ export function createInitialCollectionState(): CollectionState {
     newBingos: [],
     hydrated: false,
     saveError: null,
+    renameError: null,
   };
 }
 
@@ -237,6 +238,55 @@ export function collectionReducer(
       if (!state.cards[action.id]) return state;
       if (state.activeCardId === action.id) return state;
       return { ...state, activeCardId: action.id, newBingos: [] };
+    }
+
+    case "RENAME_CARD": {
+      // Rename is a labeling action on an existing card - it always
+      // updates an existing member's `name`/`updatedAt` in place and
+      // never creates a new one.
+      const card = state.cards[action.id];
+      if (!card) return state;
+
+      const trimmed = action.name.trim();
+      if (trimmed.length === 0) {
+        return {
+          ...state,
+          renameError: { id: action.id, message: "Name can't be empty." },
+        };
+      }
+
+      // Renaming a card to its own current name is a no-op, not a
+      // duplicate error - and clears any stale error for this card.
+      if (trimmed === card.name) {
+        return state.renameError && state.renameError.id === action.id
+          ? { ...state, renameError: null }
+          : state;
+      }
+
+      const isDuplicate = Object.values(state.cards).some(
+        (other) => other.id !== action.id && other.name === trimmed,
+      );
+      if (isDuplicate) {
+        return {
+          ...state,
+          renameError: {
+            id: action.id,
+            message: "That name is already used by another card.",
+          },
+        };
+      }
+
+      const updatedCard: PersistedCard = {
+        ...card,
+        name: trimmed,
+        updatedAt: new Date().toISOString(),
+      };
+
+      return {
+        ...state,
+        cards: { ...state.cards, [updatedCard.id]: updatedCard },
+        renameError: null,
+      };
     }
 
     case "NEW_CARD": {

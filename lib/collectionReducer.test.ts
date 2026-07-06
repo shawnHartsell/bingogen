@@ -281,6 +281,155 @@ describe("collectionReducer", () => {
     });
   });
 
+  describe("RENAME_CARD", () => {
+    function twoCards(): CollectionState {
+      let state = createInitialCollectionState();
+      state = fillGoals(state);
+      const first = collectionReducer(state, { type: "GENERATE_CARD" });
+
+      let second = { ...first, goals: [] };
+      second = fillGoals(second);
+      second = collectionReducer(second, { type: "GENERATE_CARD" });
+      return second;
+    }
+
+    it("renames the card in place, bumping updatedAt, without creating a new card", () => {
+      const state = twoCards();
+      const firstId = Object.keys(state.cards).find(
+        (id) => id !== state.activeCardId,
+      )!;
+      const before = state.cards[firstId];
+      const cardCountBefore = Object.keys(state.cards).length;
+
+      const renamed = collectionReducer(state, {
+        type: "RENAME_CARD",
+        id: firstId,
+        name: "My Favorite Card",
+      });
+
+      expect(Object.keys(renamed.cards)).toHaveLength(cardCountBefore);
+      expect(renamed.cards[firstId].name).toBe("My Favorite Card");
+      expect(renamed.cards[firstId].id).toBe(firstId);
+      expect(
+        new Date(renamed.cards[firstId].updatedAt).getTime(),
+      ).toBeGreaterThanOrEqual(new Date(before.updatedAt).getTime());
+      expect(renamed.renameError).toBeNull();
+    });
+
+    it("trims the entered name", () => {
+      const state = twoCards();
+      const id = state.activeCardId!;
+
+      const renamed = collectionReducer(state, {
+        type: "RENAME_CARD",
+        id,
+        name: "   Padded Name   ",
+      });
+
+      expect(renamed.cards[id].name).toBe("Padded Name");
+    });
+
+    it("rejects a name already used by a different card, with visible inline feedback, and keeps the previous name", () => {
+      const state = twoCards();
+      const id = state.activeCardId!;
+      const otherId = Object.keys(state.cards).find((cid) => cid !== id)!;
+      const otherName = state.cards[otherId].name;
+      const previousName = state.cards[id].name;
+
+      const result = collectionReducer(state, {
+        type: "RENAME_CARD",
+        id,
+        name: otherName,
+      });
+
+      expect(result.cards[id].name).toBe(previousName);
+      expect(result.renameError).not.toBeNull();
+      expect(result.renameError!.id).toBe(id);
+      expect(result.renameError!.message.length).toBeGreaterThan(0);
+    });
+
+    it("rejects a duplicate name even with different surrounding whitespace", () => {
+      const state = twoCards();
+      const id = state.activeCardId!;
+      const otherId = Object.keys(state.cards).find((cid) => cid !== id)!;
+      const otherName = state.cards[otherId].name;
+      const previousName = state.cards[id].name;
+
+      const result = collectionReducer(state, {
+        type: "RENAME_CARD",
+        id,
+        name: `  ${otherName}  `,
+      });
+
+      expect(result.cards[id].name).toBe(previousName);
+      expect(result.renameError).not.toBeNull();
+    });
+
+    it("treats renaming a card to its own current name as a no-op, not a duplicate error", () => {
+      const state = twoCards();
+      const id = state.activeCardId!;
+      const currentName = state.cards[id].name;
+
+      const result = collectionReducer(state, {
+        type: "RENAME_CARD",
+        id,
+        name: currentName,
+      });
+
+      expect(result.cards[id].name).toBe(currentName);
+      expect(result.renameError).toBeNull();
+    });
+
+    it("rejects a blank/whitespace-only name with inline feedback and keeps the previous name", () => {
+      const state = twoCards();
+      const id = state.activeCardId!;
+      const previousName = state.cards[id].name;
+
+      const result = collectionReducer(state, {
+        type: "RENAME_CARD",
+        id,
+        name: "   ",
+      });
+
+      expect(result.cards[id].name).toBe(previousName);
+      expect(result.renameError).not.toBeNull();
+      expect(result.renameError!.id).toBe(id);
+    });
+
+    it("is a no-op for an id that does not exist in the collection", () => {
+      const state = twoCards();
+      const result = collectionReducer(state, {
+        type: "RENAME_CARD",
+        id: "does-not-exist",
+        name: "New Name",
+      });
+      expect(result).toBe(state);
+    });
+
+    it("clears a stale rename error for the same card once it succeeds", () => {
+      let state = twoCards();
+      const id = state.activeCardId!;
+      const otherId = Object.keys(state.cards).find((cid) => cid !== id)!;
+      const otherName = state.cards[otherId].name;
+
+      state = collectionReducer(state, {
+        type: "RENAME_CARD",
+        id,
+        name: otherName,
+      });
+      expect(state.renameError).not.toBeNull();
+
+      const fixed = collectionReducer(state, {
+        type: "RENAME_CARD",
+        id,
+        name: "A Totally Unique Name",
+      });
+
+      expect(fixed.renameError).toBeNull();
+      expect(fixed.cards[id].name).toBe("A Totally Unique Name");
+    });
+  });
+
   describe("NEW_CARD", () => {
     it("clears the active card and goal-entry list without altering existing cards", () => {
       let state = createInitialCollectionState();
