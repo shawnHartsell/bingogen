@@ -201,4 +201,112 @@ describe("collectionReducer", () => {
 
     expect(hydrated.activeCardId).toBeNull();
   });
+
+  describe("SET_ACTIVE_CARD", () => {
+    it("switches the active card without altering any card's data", () => {
+      let state = createInitialCollectionState();
+      state = fillGoals(state);
+      const first = collectionReducer(state, { type: "GENERATE_CARD" });
+      const firstId = first.activeCardId!;
+
+      let second = { ...first, goals: [] };
+      second = fillGoals(second);
+      second = collectionReducer(second, { type: "GENERATE_CARD" });
+      const secondId = second.activeCardId!;
+
+      // Make progress on the second (currently active) card.
+      const cellIndex = activeCard(second)!.cells.findIndex(
+        (c) => !c.isFreeSpace,
+      );
+      const withProgress = collectionReducer(second, {
+        type: "TOGGLE_COMPLETION",
+        cellIndex,
+      });
+
+      // Switch back to the first card.
+      const switchedBack = collectionReducer(withProgress, {
+        type: "SET_ACTIVE_CARD",
+        id: firstId,
+      });
+      expect(switchedBack.activeCardId).toBe(firstId);
+      expect(activeCard(switchedBack)!.id).toBe(firstId);
+
+      // Switch forward again - the second card's progress survived.
+      const switchedForward = collectionReducer(switchedBack, {
+        type: "SET_ACTIVE_CARD",
+        id: secondId,
+      });
+      expect(switchedForward.activeCardId).toBe(secondId);
+      expect(activeCard(switchedForward)!.cells[cellIndex].isCompleted).toBe(
+        true,
+      );
+    });
+
+    it("is a no-op for an id that does not exist in the collection", () => {
+      let state = createInitialCollectionState();
+      state = fillGoals(state);
+      state = collectionReducer(state, { type: "GENERATE_CARD" });
+
+      const result = collectionReducer(state, {
+        type: "SET_ACTIVE_CARD",
+        id: "does-not-exist",
+      });
+      expect(result).toBe(state);
+    });
+
+    it("clears newBingos when switching cards", () => {
+      let state = createInitialCollectionState();
+      state = fillGoals(state);
+      const first = collectionReducer(state, { type: "GENERATE_CARD" });
+      const firstId = first.activeCardId!;
+
+      let second = { ...first, goals: [] };
+      second = fillGoals(second);
+      second = collectionReducer(second, { type: "GENERATE_CARD" });
+
+      const cellIndex = activeCard(second)!.cells.findIndex(
+        (c) => !c.isFreeSpace,
+      );
+      const withProgress = collectionReducer(second, {
+        type: "TOGGLE_COMPLETION",
+        cellIndex,
+      });
+      expect(withProgress.newBingos).toBeDefined();
+
+      const switched = collectionReducer(withProgress, {
+        type: "SET_ACTIVE_CARD",
+        id: firstId,
+      });
+      expect(switched.newBingos).toEqual([]);
+    });
+  });
+
+  describe("NEW_CARD", () => {
+    it("clears the active card and goal-entry list without altering existing cards", () => {
+      let state = createInitialCollectionState();
+      state = fillGoals(state);
+      state = collectionReducer(state, { type: "GENERATE_CARD" });
+      const existingId = state.activeCardId!;
+      const existingCardBefore = state.cards[existingId];
+
+      const started = collectionReducer(state, { type: "NEW_CARD" });
+
+      expect(started.activeCardId).toBeNull();
+      expect(started.goals).toEqual([]);
+      expect(started.cards[existingId]).toEqual(existingCardBefore);
+      expect(Object.keys(started.cards)).toHaveLength(1);
+    });
+
+    it("does not create a collection member by itself - only GENERATE_CARD does", () => {
+      const state = createInitialCollectionState();
+      const started = collectionReducer(state, { type: "NEW_CARD" });
+      expect(Object.keys(started.cards)).toHaveLength(0);
+    });
+
+    it("is a no-op when already at a clean goal-entry state", () => {
+      const state = createInitialCollectionState();
+      const result = collectionReducer(state, { type: "NEW_CARD" });
+      expect(result).toBe(state);
+    });
+  });
 });

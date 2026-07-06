@@ -41,10 +41,19 @@ function selectAppState(
   };
 }
 
+/** Minimal, sidebar-facing summary of a saved card - not the full snapshot. */
+export interface CardSummary {
+  id: string;
+  name: string;
+}
+
 // ─── Context ──────────────────────────────────────────────
 interface AppContextValue {
   state: AppState;
   dispatch: Dispatch<AppAction>;
+  /** Every saved card, by name, for the persistent sidebar. */
+  cards: CardSummary[];
+  activeCardId: string | null;
 }
 
 const AppContext = createContext<AppContextValue | null>(null);
@@ -123,8 +132,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
     collectionState.hydrated,
   );
 
+  const cards: CardSummary[] = Object.values(collectionState.cards)
+    .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+    .map((card) => ({ id: card.id, name: card.name }));
+
   return (
-    <AppContext.Provider value={{ state, dispatch }}>
+    <AppContext.Provider
+      value={{
+        state,
+        dispatch,
+        cards,
+        activeCardId: collectionState.activeCardId,
+      }}
+    >
       {children}
     </AppContext.Provider>
   );
