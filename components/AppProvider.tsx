@@ -5,6 +5,7 @@ import {
   useContext,
   useEffect,
   useReducer,
+  useRef,
   type ReactNode,
   type Dispatch,
 } from "react";
@@ -54,6 +55,8 @@ interface AppContextValue {
   /** Every saved card, by name, for the persistent sidebar. */
   cards: CardSummary[];
   activeCardId: string | null;
+  /** Inline feedback for the most recently rejected rename attempt, if any. */
+  renameError: { id: string; message: string } | null;
 }
 
 const AppContext = createContext<AppContextValue | null>(null);
@@ -111,6 +114,27 @@ export function AppProvider({ children }: { children: ReactNode }) {
     });
   }, [collectionState.hydrated, activeCard]);
 
+  // Renaming a non-active card also mutates the collection and must be
+  // persisted immediately, not just when it happens to be the active card.
+  // The active card is already covered by the effect above, so it's
+  // skipped here; a ref tracks the last-saved reference per id so an
+  // unrelated state change doesn't re-save every other card too.
+  const lastSavedRef = useRef<Record<string, PersistedCard>>({});
+  useEffect(() => {
+    if (!collectionState.hydrated) return;
+    for (const card of Object.values(collectionState.cards)) {
+      if (card.id === activeCard?.id) continue;
+      if (lastSavedRef.current[card.id] === card) continue;
+      lastSavedRef.current[card.id] = card;
+      repository.save(card).catch((err) => {
+        dispatch({
+          type: "SAVE_ERROR",
+          message: err instanceof Error ? err.message : "Failed to save card.",
+        });
+      });
+    }
+  }, [collectionState.hydrated, collectionState.cards, activeCard]);
+
   // Persist which card is active whenever it changes.
   useEffect(() => {
     if (!collectionState.hydrated) return;
@@ -143,6 +167,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         dispatch,
         cards,
         activeCardId: collectionState.activeCardId,
+        renameError: collectionState.renameError,
       }}
     >
       {children}
