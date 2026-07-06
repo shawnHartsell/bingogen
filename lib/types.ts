@@ -17,18 +17,47 @@ export interface Cell {
   notes: string; // Markdown content, max 500 chars
 }
 
-// ─── Application State ───────────────────────────────────
-export interface AppState {
-  // Phase 1: Goal entry
-  goals: string[]; // 0–24 goals entered so far
-
-  // Phase 2: Card generated
-  cells: Cell[]; // 25 cells (flat, row-major), empty until card generation
-  cardGenerated: boolean; // true after Generate Card action
-
-  // Phase 3: Bingo tracking
+// ─── Card Collection ──────────────────────────────────────
+// A collection member: a full, durable snapshot of one bingo card, keyed by
+// a stable `id`. This is the same shape persisted through the repository
+// port (see lib/persistence/types.ts).
+export interface CardRecord {
+  id: string;
+  name: string;
+  createdAt: string; // ISO timestamp
+  updatedAt: string; // ISO timestamp
+  schemaVersion: number;
+  cells: Cell[]; // 25 cells (flat, row-major)
   completedBingos: number[]; // indices of completed bingo lines (0–11)
+}
+
+// ─── Application State ───────────────────────────────────
+// The collection is the durable source of truth: cards keyed by a stable
+// `id`, plus which one is active. Only the active card renders on the board.
+export interface CollectionState {
+  // Phase 1: Goal entry
+  goals: string[]; // 0–24 goals entered so far, before a card exists
+
+  // Phase 2+: Persisted collection
+  cards: Record<string, CardRecord>;
+  activeCardId: string | null;
+
+  // Phase 3: Bingo tracking (ephemeral, not persisted)
   newBingos: number[]; // lines completed by the LAST toggle only (animation trigger)
+}
+
+/**
+ * The legacy flat "board view" shape consumed by page/UI components. It is
+ * derived from `CollectionState` (see `selectAppState` in lib/appReducer.ts)
+ * so existing components render the active card without needing to know
+ * about the collection.
+ */
+export interface AppState {
+  goals: string[];
+  cells: Cell[];
+  cardGenerated: boolean;
+  completedBingos: number[];
+  newBingos: number[];
 }
 
 // ─── Actions ──────────────────────────────────────────────
@@ -39,4 +68,5 @@ export type AppAction =
   | { type: "TOGGLE_COMPLETION"; cellIndex: number }
   | { type: "UPDATE_NOTES"; cellIndex: number; notes: string }
   | { type: "UPDATE_GOAL_TITLE"; cellIndex: number; title: string }
-  | { type: "RESET" };
+  | { type: "RESET" }
+  | { type: "HYDRATE"; cards: CardRecord[]; activeCardId: string | null };

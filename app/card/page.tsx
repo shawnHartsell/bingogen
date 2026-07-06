@@ -9,18 +9,20 @@ import { CellModal } from "@/components/CellModal";
 import { TOTAL_BINGO_LINES } from "@/lib/types";
 
 export default function CardPage() {
-  const { state, dispatch } = useApp();
+  const { state, dispatch, hydrated } = useApp();
   const router = useRouter();
   const [selectedCellIndex, setSelectedCellIndex] = useState<number | null>(
     null,
   );
 
-  // Route guard: redirect to goal entry if no card generated
+  // Route guard: redirect to goal entry if no card generated. Wait for
+  // rehydration to finish first so a reload doesn't bounce away from a
+  // persisted active card before it has loaded.
   useEffect(() => {
-    if (!state.cardGenerated) {
+    if (hydrated && !state.cardGenerated) {
       router.replace("/");
     }
-  }, [state.cardGenerated, router]);
+  }, [hydrated, state.cardGenerated, router]);
 
   function handleCellClick(cellIndex: number) {
     const cell = state.cells[cellIndex];
