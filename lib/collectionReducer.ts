@@ -289,6 +289,33 @@ export function collectionReducer(
       };
     }
 
+    case "DELETE_CARD": {
+      const card = state.cards[action.id];
+      if (!card) return state;
+
+      const remainingCards = { ...state.cards };
+      delete remainingCards[action.id];
+
+      // Deleting the active card must leave the app in a coherent state:
+      // promote another remaining card to active, or fall back to no
+      // active card (goal entry) if none remain.
+      const activeCardId =
+        state.activeCardId === action.id
+          ? (Object.keys(remainingCards)[0] ?? null)
+          : state.activeCardId;
+
+      return {
+        ...state,
+        cards: remainingCards,
+        activeCardId,
+        newBingos: state.activeCardId === action.id ? [] : state.newBingos,
+        renameError:
+          state.renameError && state.renameError.id === action.id
+            ? null
+            : state.renameError,
+      };
+    }
+
     case "NEW_CARD": {
       // Starts a fresh goal-entry flow for another card without touching
       // any existing collection member: no card is created (and no

@@ -51,7 +51,8 @@ export type AppAction =
   | { type: "SAVE_ERROR"; message: string }
   | { type: "SET_ACTIVE_CARD"; id: string }
   | { type: "NEW_CARD" }
-  | { type: "RENAME_CARD"; id: string; name: string };
+  | { type: "RENAME_CARD"; id: string; name: string }
+  | { type: "DELETE_CARD"; id: string };
 
 // ─── Persistence ──────────────────────────────────────────
 // Current schema version for persisted cards. Bump whenever the shape of

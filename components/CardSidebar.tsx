@@ -56,6 +56,30 @@ export function CardSidebar() {
     router.push("/");
   }
 
+  // Delete (US11): a lightweight inline confirmation guards the delete so a
+  // misclick can't wipe a card. Only one card's confirmation is open at a
+  // time; clicking delete on another card, or cancelling, closes it.
+  const [confirmingDeleteId, setConfirmingDeleteId] = useState<string | null>(
+    null,
+  );
+
+  function requestDelete(id: string) {
+    setConfirmingDeleteId(id);
+  }
+
+  function cancelDelete() {
+    setConfirmingDeleteId(null);
+  }
+
+  function confirmDelete(id: string) {
+    dispatch({ type: "DELETE_CARD", id });
+    setConfirmingDeleteId(null);
+    // No manual navigation needed: the route guards on "/" and "/card"
+    // already react to activeCardId/cardGenerated changes (redirecting to
+    // "/" if no card remains active, or staying put if another card was
+    // promoted to active).
+  }
+
   function startRename(card: CardSummary) {
     setEditingId(card.id);
     setDraftName(card.name);
@@ -84,7 +108,37 @@ export function CardSidebar() {
       {cards.map((card) => {
         const isActive = card.id === activeCardId;
         const isEditing = editingId === card.id;
+        const isConfirmingDelete = confirmingDeleteId === card.id;
         const error = showError(card.id);
+
+        if (isConfirmingDelete) {
+          return (
+            <li
+              key={card.id}
+              className="flex flex-col gap-1 rounded-md border border-red-500/40 bg-red-500/5 px-2 py-1.5"
+            >
+              <p className="truncate text-sm text-zinc-200">
+                Delete <span className="font-semibold">{card.name}</span>?
+              </p>
+              <div className="flex gap-1">
+                <button
+                  type="button"
+                  onClick={() => confirmDelete(card.id)}
+                  className="rounded-md bg-red-500/20 px-2 py-1 text-xs font-semibold text-red-300 hover:bg-red-500/30"
+                >
+                  Delete
+                </button>
+                <button
+                  type="button"
+                  onClick={cancelDelete}
+                  className="rounded-md px-2 py-1 text-xs text-zinc-400 hover:bg-zinc-800"
+                >
+                  Cancel
+                </button>
+              </div>
+            </li>
+          );
+        }
 
         if (isEditing) {
           return (
@@ -157,6 +211,15 @@ export function CardSidebar() {
               className="shrink-0 rounded-md px-1.5 py-1 text-xs text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300"
             >
               ✏️
+            </button>
+            <button
+              type="button"
+              onClick={() => requestDelete(card.id)}
+              aria-label={`Delete ${card.name}`}
+              title="Delete"
+              className="shrink-0 rounded-md px-1.5 py-1 text-xs text-zinc-500 hover:bg-red-500/10 hover:text-red-400"
+            >
+              🗑️
             </button>
           </li>
         );

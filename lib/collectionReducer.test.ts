@@ -430,6 +430,101 @@ describe("collectionReducer", () => {
     });
   });
 
+  describe("DELETE_CARD", () => {
+    function twoCards(): CollectionState {
+      let state = createInitialCollectionState();
+      state = fillGoals(state);
+      const first = collectionReducer(state, { type: "GENERATE_CARD" });
+
+      let second = { ...first, goals: [] };
+      second = fillGoals(second);
+      second = collectionReducer(second, { type: "GENERATE_CARD" });
+      return second;
+    }
+
+    it("removes a non-active card from the collection without touching the active card", () => {
+      const state = twoCards();
+      const activeId = state.activeCardId!;
+      const otherId = Object.keys(state.cards).find(
+        (id) => id !== activeId,
+      )!;
+
+      const result = collectionReducer(state, {
+        type: "DELETE_CARD",
+        id: otherId,
+      });
+
+      expect(result.cards[otherId]).toBeUndefined();
+      expect(Object.keys(result.cards)).toHaveLength(1);
+      expect(result.activeCardId).toBe(activeId);
+      expect(result.cards[activeId]).toEqual(state.cards[activeId]);
+    });
+
+    it("deleting the active card promotes another remaining card to active", () => {
+      const state = twoCards();
+      const activeId = state.activeCardId!;
+      const otherId = Object.keys(state.cards).find(
+        (id) => id !== activeId,
+      )!;
+
+      const result = collectionReducer(state, {
+        type: "DELETE_CARD",
+        id: activeId,
+      });
+
+      expect(result.cards[activeId]).toBeUndefined();
+      expect(Object.keys(result.cards)).toHaveLength(1);
+      expect(result.activeCardId).toBe(otherId);
+    });
+
+    it("deleting the only (active) card falls back to no active card / goal entry", () => {
+      let state = createInitialCollectionState();
+      state = fillGoals(state);
+      state = collectionReducer(state, { type: "GENERATE_CARD" });
+      const id = state.activeCardId!;
+
+      const result = collectionReducer(state, {
+        type: "DELETE_CARD",
+        id,
+      });
+
+      expect(result.cards).toEqual({});
+      expect(result.activeCardId).toBeNull();
+    });
+
+    it("is a no-op for an id that does not exist in the collection", () => {
+      const state = twoCards();
+      const result = collectionReducer(state, {
+        type: "DELETE_CARD",
+        id: "does-not-exist",
+      });
+      expect(result).toBe(state);
+    });
+
+    it("clears a rename error that belonged to the deleted card", () => {
+      const state = twoCards();
+      const activeId = state.activeCardId!;
+      const otherId = Object.keys(state.cards).find(
+        (id) => id !== activeId,
+      )!;
+      const otherName = state.cards[otherId].name;
+
+      const withError = collectionReducer(state, {
+        type: "RENAME_CARD",
+        id: activeId,
+        name: otherName,
+      });
+      expect(withError.renameError).not.toBeNull();
+
+      const result = collectionReducer(withError, {
+        type: "DELETE_CARD",
+        id: activeId,
+      });
+
+      expect(result.renameError).toBeNull();
+    });
+  });
+
   describe("NEW_CARD", () => {
     it("clears the active card and goal-entry list without altering existing cards", () => {
       let state = createInitialCollectionState();
