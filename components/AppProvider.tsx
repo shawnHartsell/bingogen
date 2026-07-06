@@ -3,153 +3,42 @@
 import {
   createContext,
   useContext,
+  useEffect,
   useReducer,
   type ReactNode,
   type Dispatch,
 } from "react";
+import type { AppState, AppAction, PersistedCard } from "@/lib/types";
 import {
-  type AppState,
-  type AppAction,
-  type Cell,
-  GOALS_REQUIRED,
-  MAX_GOAL_LENGTH,
-  MAX_NOTES_LENGTH,
-  FREE_SPACE_INDEX,
-  GRID_SIZE,
-  TOTAL_CELLS,
-} from "@/lib/types";
-import { shuffle } from "@/lib/shuffle";
-import { detectBingos, findNewBingos } from "@/lib/bingo";
+  collectionReducer,
+  createInitialCollectionState,
+} from "@/lib/collectionReducer";
+import { createLocalStorageCardRepository } from "@/lib/cardRepository";
 
-// ─── Initial State ────────────────────────────────────────
-const initialState: AppState = {
-  goals: [],
-  cells: [],
-  cardGenerated: false,
-  completedBingos: [],
-  newBingos: [],
-};
+// Single repository instance for the app's lifetime. SSR-safe: it lazily
+// resolves `window.localStorage` per-call, so constructing it during server
+// render is harmless.
+const repository = createLocalStorageCardRepository();
 
-// ─── Helpers ──────────────────────────────────────────────
-function buildCells(goals: string[]): Cell[] {
-  const shuffled = shuffle(goals);
-  const cells: Cell[] = [];
-  let goalIdx = 0;
-
-  for (let i = 0; i < TOTAL_CELLS; i++) {
-    const row = Math.floor(i / GRID_SIZE);
-    const col = i % GRID_SIZE;
-    const isFreeSpace = i === FREE_SPACE_INDEX;
-
-    cells.push({
-      row,
-      col,
-      goalTitle: isFreeSpace ? "FREE" : shuffled[goalIdx++],
-      isFreeSpace,
-      isCompleted: isFreeSpace, // free space always completed
-      notes: "",
-    });
-  }
-
-  return cells;
-}
-
-// ─── Reducer ──────────────────────────────────────────────
-function appReducer(state: AppState, action: AppAction): AppState {
-  switch (action.type) {
-    case "ADD_GOAL": {
-      const trimmed = action.goal.trim();
-      if (
-        trimmed.length === 0 ||
-        trimmed.length > MAX_GOAL_LENGTH ||
-        state.goals.length >= GOALS_REQUIRED
-      ) {
-        return state;
-      }
-      return { ...state, goals: [...state.goals, trimmed] };
-    }
-
-    case "REMOVE_GOAL": {
-      if (action.index < 0 || action.index >= state.goals.length) {
-        return state;
-      }
-      return {
-        ...state,
-        goals: state.goals.filter((_, i) => i !== action.index),
-      };
-    }
-
-    case "GENERATE_CARD": {
-      if (state.goals.length !== GOALS_REQUIRED) {
-        return state;
-      }
-      return {
-        ...state,
-        cells: buildCells(state.goals),
-        cardGenerated: true,
-        completedBingos: [],
-        newBingos: [],
-      };
-    }
-
-    case "TOGGLE_COMPLETION": {
-      const { cellIndex } = action;
-      if (cellIndex < 0 || cellIndex >= TOTAL_CELLS) return state;
-      if (state.cells[cellIndex].isFreeSpace) return state;
-
-      const newCells = state.cells.map((cell, i) =>
-        i === cellIndex ? { ...cell, isCompleted: !cell.isCompleted } : cell,
-      );
-
-      const completed = newCells.map((c) => c.isCompleted);
-      const newCompletedBingos = detectBingos(completed);
-      const newBingos = findNewBingos(
-        newCompletedBingos,
-        state.completedBingos,
-      );
-
-      return {
-        ...state,
-        cells: newCells,
-        completedBingos: newCompletedBingos,
-        newBingos,
-      };
-    }
-
-    case "UPDATE_NOTES": {
-      const { cellIndex, notes } = action;
-      if (cellIndex < 0 || cellIndex >= TOTAL_CELLS) return state;
-      const truncated = notes.slice(0, MAX_NOTES_LENGTH);
-      return {
-        ...state,
-        cells: state.cells.map((cell, i) =>
-          i === cellIndex ? { ...cell, notes: truncated } : cell,
-        ),
-      };
-    }
-
-    case "UPDATE_GOAL_TITLE": {
-      const { cellIndex, title } = action;
-      if (cellIndex < 0 || cellIndex >= TOTAL_CELLS) return state;
-      if (state.cells[cellIndex].isFreeSpace) return state;
-      const trimmed = title.trim();
-      if (trimmed.length === 0 || trimmed.length > MAX_GOAL_LENGTH)
-        return state;
-      return {
-        ...state,
-        cells: state.cells.map((cell, i) =>
-          i === cellIndex ? { ...cell, goalTitle: trimmed } : cell,
-        ),
-      };
-    }
-
-    case "RESET": {
-      return initialState;
-    }
-
-    default:
-      return state;
-  }
+/**
+ * Derives the flattened, legacy-shaped AppState the UI consumes from the
+ * collection's active card (or the pre-generation goal list when there is
+ * no active card yet).
+ */
+function selectAppState(
+  goals: string[],
+  activeCard: PersistedCard | null,
+  newBingos: number[],
+  hydrated: boolean,
+): AppState {
+  return {
+    goals: activeCard ? activeCard.goals : goals,
+    cells: activeCard ? activeCard.cells : [],
+    cardGenerated: !!activeCard,
+    completedBingos: activeCard ? activeCard.completedBingos : [],
+    newBingos,
+    hydrated,
+  };
 }
 
 // ─── Context ──────────────────────────────────────────────
@@ -161,7 +50,78 @@ interface AppContextValue {
 const AppContext = createContext<AppContextValue | null>(null);
 
 export function AppProvider({ children }: { children: ReactNode }) {
-  const [state, dispatch] = useReducer(appReducer, initialState);
+  const [collectionState, dispatch] = useReducer(
+    collectionReducer,
+    undefined,
+    createInitialCollectionState,
+  );
+
+  const activeCard = collectionState.activeCardId
+    ? (collectionState.cards[collectionState.activeCardId] ?? null)
+    : null;
+
+  // Rehydrate the collection from the persistence port once on mount.
+  useEffect(() => {
+    let cancelled = false;
+
+    async function hydrate() {
+      let cards: PersistedCard[] = [];
+      let activeCardId: string | null = null;
+      try {
+        [cards, activeCardId] = await Promise.all([
+          repository.list(),
+          repository.loadActiveId(),
+        ]);
+      } catch {
+        // Malformed/unavailable store: rehydrate empty rather than crash.
+        cards = [];
+        activeCardId = null;
+      }
+      if (!cancelled) {
+        dispatch({ type: "HYDRATE", cards, activeCardId });
+      }
+    }
+
+    hydrate();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // Autosave the active card through the port on every change, continuously
+  // and with no explicit save action. Skipped until hydration completes so
+  // we never overwrite the stored collection with the transient initial
+  // (empty) in-memory state.
+  useEffect(() => {
+    if (!collectionState.hydrated || !activeCard) return;
+    repository.save(activeCard).catch((err) => {
+      dispatch({
+        type: "SAVE_ERROR",
+        message: err instanceof Error ? err.message : "Failed to save card.",
+      });
+    });
+  }, [collectionState.hydrated, activeCard]);
+
+  // Persist which card is active whenever it changes.
+  useEffect(() => {
+    if (!collectionState.hydrated) return;
+    repository.saveActiveId(collectionState.activeCardId).catch((err) => {
+      dispatch({
+        type: "SAVE_ERROR",
+        message:
+          err instanceof Error
+            ? err.message
+            : "Failed to save active card pointer.",
+      });
+    });
+  }, [collectionState.hydrated, collectionState.activeCardId]);
+
+  const state = selectAppState(
+    collectionState.goals,
+    activeCard,
+    collectionState.newBingos,
+    collectionState.hydrated,
+  );
 
   return (
     <AppContext.Provider value={{ state, dispatch }}>
