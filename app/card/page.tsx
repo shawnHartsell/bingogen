@@ -15,12 +15,14 @@ export default function CardPage() {
     null,
   );
 
-  // Route guard: redirect to goal entry if no card generated
+  // Route guard: redirect to goal entry if no card generated. Wait for
+  // rehydration to finish first, otherwise we'd redirect away before a
+  // persisted active card has had a chance to load.
   useEffect(() => {
-    if (!state.cardGenerated) {
+    if (state.hydrated && !state.cardGenerated) {
       router.replace("/");
     }
-  }, [state.cardGenerated, router]);
+  }, [state.hydrated, state.cardGenerated, router]);
 
   function handleCellClick(cellIndex: number) {
     const cell = state.cells[cellIndex];
@@ -43,7 +45,7 @@ export default function CardPage() {
     dispatch({ type: "UPDATE_GOAL_TITLE", cellIndex, title });
   }
 
-  if (!state.cardGenerated) {
+  if (!state.hydrated || !state.cardGenerated) {
     return null;
   }
 
