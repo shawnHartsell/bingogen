@@ -230,6 +230,25 @@ export function collectionReducer(
       return { ...state, saveError: action.message };
     }
 
+    case "SET_ACTIVE_CARD": {
+      // Switching cards is a pure pointer swap - every card independently
+      // retains its own cells/notes/completedBingos, so no data is copied
+      // or mutated here.
+      if (!state.cards[action.id]) return state;
+      if (state.activeCardId === action.id) return state;
+      return { ...state, activeCardId: action.id, newBingos: [] };
+    }
+
+    case "NEW_CARD": {
+      // Starts a fresh goal-entry flow for another card without touching
+      // any existing collection member: no card is created (and no
+      // existing card is altered) until GENERATE_CARD runs again.
+      if (state.activeCardId === null && state.goals.length === 0) {
+        return state;
+      }
+      return { ...state, goals: [], activeCardId: null, newBingos: [] };
+    }
+
     case "RESET": {
       return createInitialCollectionState();
     }

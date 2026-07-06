@@ -48,7 +48,9 @@ export type AppAction =
   | { type: "UPDATE_GOAL_TITLE"; cellIndex: number; title: string }
   | { type: "RESET" }
   | { type: "HYDRATE"; cards: PersistedCard[]; activeCardId: string | null }
-  | { type: "SAVE_ERROR"; message: string };
+  | { type: "SAVE_ERROR"; message: string }
+  | { type: "SET_ACTIVE_CARD"; id: string }
+  | { type: "NEW_CARD" };
 
 // ─── Persistence ──────────────────────────────────────────
 // Current schema version for persisted cards. Bump whenever the shape of
