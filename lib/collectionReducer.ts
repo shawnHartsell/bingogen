@@ -299,9 +299,10 @@ export function collectionReducer(
       // Deleting the active card must leave the app in a coherent state:
       // promote another remaining card to active, or fall back to no
       // active card (goal entry) if none remain.
+      const remainingIds = Object.keys(remainingCards);
       const activeCardId =
         state.activeCardId === action.id
-          ? null
+          ? (remainingIds.length > 0 ? remainingIds[0] : null)
           : state.activeCardId;
 
       return {
