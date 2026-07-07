@@ -69,6 +69,23 @@ describe("createLocalStorageCardRepository (in-memory backing)", () => {
     expect(listed[0].name).toBe("Renamed");
   });
 
+  it("persists multiple distinct cards across a simulated reload", async () => {
+    const storage = createInMemoryStorage();
+    const repo = createLocalStorageCardRepository(storage);
+    const cardA = makeCard({ id: "card-a", name: "Card A" });
+    const cardB = makeCard({ id: "card-b", name: "Card B" });
+
+    await repo.save(cardA);
+    await repo.save(cardB);
+
+    // Simulate a page reload: a fresh repository instance over the same
+    // underlying storage should see everything that was saved before.
+    const reloadedRepo = createLocalStorageCardRepository(storage);
+    const listed = await reloadedRepo.list();
+
+    expect(listed.map((c) => c.id).sort()).toEqual(["card-a", "card-b"]);
+  });
+
   it("deletes a card by id", async () => {
     const repo = createLocalStorageCardRepository(createInMemoryStorage());
     const card = makeCard();
