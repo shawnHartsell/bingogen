@@ -1,7 +1,19 @@
 @import "tailwindcss";
 @plugin "@tailwindcss/typography";
+@variant dark (&:where(.dark, .dark *));
 
+/*
+ * Light mode is the CSS default (`:root`); `.dark` overrides it back to
+ * the app's original hardcoded dark palette. Dark remains the *product*
+ * default via the `dark` class the root layout renders on <html> - see
+ * `useTheme`/`ThemeToggle` for how the preference is read/toggled.
+ */
 :root {
+  --background: #f8fafc;
+  --foreground: #18181b;
+}
+
+.dark {
   --background: #0f0f13;
   --foreground: #e4e4e7;
 }

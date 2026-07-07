@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { AppProvider } from "@/components/AppProvider";
 import { CardSidebar } from "@/components/CardSidebar";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -26,11 +27,15 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    // "dark" is the default appearance before the useTheme hook rehydrates
+    // the persisted preference on mount (localStorage isn't reachable
+    // during SSR); this keeps first paint identical to the pre-toggle app.
+    <html lang="en" className="dark">
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background text-foreground min-h-screen`}
       >
         <AppProvider>
+          <ThemeToggle />
           <div className="sm:flex">
             <CardSidebar />
             <div className="min-w-0 flex-1">{children}</div>
