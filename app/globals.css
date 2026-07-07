@@ -1,7 +1,19 @@
 @import "tailwindcss";
 @plugin "@tailwindcss/typography";
 
+/* Tailwind v4: enables the `dark:` variant to be driven by a `.dark` class
+   on <html> (added by useTheme) instead of the OS-level prefers-color-scheme
+   media query, so the in-app toggle takes precedence. */
+@variant dark (&:where(.dark, .dark *));
+
 :root {
+  /* Light mode is the CSS default; `.dark` below overrides it. */
+  --background: #f4f4f5;
+  --foreground: #18181b;
+}
+
+.dark {
+  /* Preserves the app's original hardcoded dark appearance. */
   --background: #0f0f13;
   --foreground: #e4e4e7;
 }

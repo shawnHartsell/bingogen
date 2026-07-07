@@ -11,7 +11,7 @@ export function GoalCounter({ current, target }: GoalCounterProps) {
   return (
     <div className="flex items-center gap-2 text-sm">
       <span
-        className={`font-mono font-semibold ${isComplete ? "text-yellow-400" : "text-zinc-400"}`}
+        className={`font-mono font-semibold ${isComplete ? "text-yellow-400" : "text-zinc-600 dark:text-zinc-400"}`}
       >
         {current} / {target}
       </span>

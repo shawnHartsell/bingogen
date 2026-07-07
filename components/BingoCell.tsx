@@ -74,7 +74,7 @@ export function BingoCell({
             ? isInBingo
               ? "border-yellow-500/60 bg-yellow-500/15"
               : "border-emerald-500/50 bg-emerald-500/10"
-            : "border-zinc-700 bg-zinc-900 hover:bg-zinc-800/80"
+            : "border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 hover:bg-zinc-200/80 dark:hover:bg-zinc-800/80"
         }
         ${cell.isFreeSpace ? "border-yellow-500/40 bg-yellow-500/10" : ""}
       `}
@@ -94,7 +94,7 @@ export function BingoCell({
             ${
               cell.isCompleted
                 ? "bg-emerald-500 border-emerald-400 text-white"
-                : "border-zinc-600 hover:border-zinc-400"
+                : "border-zinc-400 dark:border-zinc-600 hover:border-zinc-500 dark:hover:border-zinc-400"
             }
           `}
           aria-label={`Mark "${cell.goalTitle}" as ${cell.isCompleted ? "incomplete" : "complete"}`}
@@ -123,8 +123,8 @@ export function BingoCell({
           onKeyDown={handleKeyDown}
           onBlur={handleSave}
           maxLength={MAX_GOAL_LENGTH}
-          className="w-full bg-zinc-800 border border-yellow-500/50 rounded px-1 py-0.5
-            text-[10px] sm:text-xs text-center text-zinc-100
+          className="w-full bg-zinc-100 dark:bg-zinc-800 border border-yellow-500/50 rounded px-1 py-0.5
+            text-[10px] sm:text-xs text-center text-zinc-900 dark:text-zinc-100
             focus:outline-none focus:ring-1 focus:ring-yellow-400/50"
           onClick={(e) => e.stopPropagation()}
         />

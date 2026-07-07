@@ -65,15 +65,15 @@ export function CellModal({
       onClick={handleBackdropClick}
       className="backdrop:bg-black/60 bg-transparent p-0 max-w-lg w-[calc(100%-2rem)] rounded-xl outline-none fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 m-0"
     >
-      <div className="bg-zinc-900 border border-zinc-700 rounded-xl p-5 sm:p-6 flex flex-col gap-4 max-h-[80vh] overflow-y-auto text-zinc-100">
+      <div className="bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-xl p-5 sm:p-6 flex flex-col gap-4 max-h-[80vh] overflow-y-auto text-zinc-900 dark:text-zinc-100">
         {/* Header */}
         <div className="flex items-start justify-between gap-4">
-          <h2 className="text-lg font-semibold leading-tight break-words flex-1 text-zinc-100">
+          <h2 className="text-lg font-semibold leading-tight break-words flex-1 text-zinc-900 dark:text-zinc-100">
             {cell.goalTitle}
           </h2>
           <button
             onClick={handleSave}
-            className="text-zinc-500 hover:text-zinc-300 transition-colors shrink-0 text-xl leading-none"
+            className="text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors shrink-0 text-xl leading-none"
             aria-label="Close"
           >
             ×
@@ -88,7 +88,7 @@ export function CellModal({
           <div className="flex flex-col gap-3">
             <MarkdownEditor value={draft} onChange={setDraft} />
             {/* Live preview */}
-            <div className="border-t border-zinc-700 pt-3">
+            <div className="border-t border-zinc-300 dark:border-zinc-700 pt-3">
               <p className="text-xs text-zinc-500 mb-2">Preview</p>
               <MarkdownPreview content={draft} onContentChange={setDraft} />
             </div>
