@@ -301,7 +301,7 @@ export function collectionReducer(
       // active card (goal entry) if none remain.
       const activeCardId =
         state.activeCardId === action.id
-          ? (Object.keys(remainingCards)[0] ?? null)
+          ? null
           : state.activeCardId;
 
       return {
