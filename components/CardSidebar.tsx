@@ -117,21 +117,21 @@ export function CardSidebar() {
               key={card.id}
               className="flex flex-col gap-1 rounded-md border border-red-500/40 bg-red-500/5 px-2 py-1.5"
             >
-              <p className="truncate text-sm text-zinc-200">
+              <p className="truncate text-sm text-zinc-800 dark:text-zinc-200">
                 Delete <span className="font-semibold">{card.name}</span>?
               </p>
               <div className="flex gap-1">
                 <button
                   type="button"
                   onClick={() => confirmDelete(card.id)}
-                  className="rounded-md bg-red-500/20 px-2 py-1 text-xs font-semibold text-red-300 hover:bg-red-500/30"
+                  className="rounded-md bg-red-500/20 px-2 py-1 text-xs font-semibold text-red-700 dark:text-red-300 hover:bg-red-500/30"
                 >
                   Delete
                 </button>
                 <button
                   type="button"
                   onClick={cancelDelete}
-                  className="rounded-md px-2 py-1 text-xs text-zinc-400 hover:bg-zinc-800"
+                  className="rounded-md px-2 py-1 text-xs text-zinc-500 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-800"
                 >
                   Cancel
                 </button>
@@ -161,20 +161,20 @@ export function CardSidebar() {
                     }}
                     aria-invalid={error ? "true" : undefined}
                     aria-label={`Rename ${card.name}`}
-                    className={`min-w-0 flex-1 rounded-md border bg-zinc-900 px-2 py-1 text-sm text-zinc-100 ${
-                      error ? "border-red-500" : "border-zinc-700"
+                    className={`min-w-0 flex-1 rounded-md border bg-white dark:bg-zinc-900 px-2 py-1 text-sm text-zinc-900 dark:text-zinc-100 ${
+                      error ? "border-red-500" : "border-zinc-300 dark:border-zinc-700"
                     }`}
                   />
                   <button
                     type="submit"
-                    className="rounded-md bg-yellow-500/20 px-2 py-1 text-xs font-semibold text-yellow-300 hover:bg-yellow-500/30"
+                    className="rounded-md bg-yellow-500/20 px-2 py-1 text-xs font-semibold text-yellow-700 dark:text-yellow-300 hover:bg-yellow-500/30"
                   >
                     Save
                   </button>
                   <button
                     type="button"
                     onClick={cancelRename}
-                    className="rounded-md px-2 py-1 text-xs text-zinc-400 hover:bg-zinc-800"
+                    className="rounded-md px-2 py-1 text-xs text-zinc-500 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-800"
                   >
                     Cancel
                   </button>
@@ -197,8 +197,8 @@ export function CardSidebar() {
               aria-current={isActive ? "true" : undefined}
               className={`min-w-0 flex-1 truncate rounded-md px-2 py-1.5 text-left text-sm transition-colors ${
                 isActive
-                  ? "bg-yellow-500/20 text-yellow-300 font-semibold"
-                  : "text-zinc-300 hover:bg-zinc-800"
+                  ? "bg-yellow-500/20 text-yellow-700 dark:text-yellow-300 font-semibold"
+                  : "text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-800"
               }`}
             >
               {card.name}
@@ -208,7 +208,7 @@ export function CardSidebar() {
               onClick={() => startRename(card)}
               aria-label={`Rename ${card.name}`}
               title="Rename"
-              className="shrink-0 rounded-md px-1.5 py-1 text-xs text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300"
+              className="shrink-0 rounded-md px-1.5 py-1 text-xs text-zinc-500 hover:bg-zinc-200 dark:hover:bg-zinc-800 hover:text-zinc-700 dark:hover:text-zinc-300"
             >
               ✏️
             </button>
@@ -230,15 +230,15 @@ export function CardSidebar() {
   return (
     <>
       {/* Narrow viewports: collapsible drawer above the content. */}
-      <details className="sm:hidden border-b border-zinc-800 bg-zinc-950">
-        <summary className="cursor-pointer select-none px-4 py-2 text-sm font-semibold text-zinc-300">
+      <details className="sm:hidden border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950">
+        <summary className="cursor-pointer select-none px-4 py-2 text-sm font-semibold text-zinc-700 dark:text-zinc-300">
           Your cards ({cards.length})
         </summary>
         <div className="px-4 pb-3">
           <button
             type="button"
             onClick={handleNewCard}
-            className="mb-2 w-full rounded-md border border-yellow-500/50 py-1.5 text-xs font-bold text-yellow-400 hover:bg-yellow-500/10 transition-colors"
+            className="mb-2 w-full rounded-md border border-yellow-500/50 py-1.5 text-xs font-bold text-yellow-600 dark:text-yellow-400 hover:bg-yellow-500/10 transition-colors"
           >
             + New card
           </button>
@@ -247,14 +247,14 @@ export function CardSidebar() {
       </details>
 
       {/* Wide viewports: persistent sidebar beside the board. */}
-      <aside className="hidden sm:flex sm:flex-col sm:w-56 sm:shrink-0 sm:border-r sm:border-zinc-800 sm:min-h-screen sm:px-3 sm:py-6 sm:gap-3">
+      <aside className="hidden sm:flex sm:flex-col sm:w-56 sm:shrink-0 sm:border-r sm:border-zinc-200 dark:sm:border-zinc-800 sm:min-h-screen sm:px-3 sm:py-6 sm:gap-3">
         <h2 className="px-2 text-xs font-bold uppercase tracking-wide text-zinc-500">
           Your cards
         </h2>
         <button
           type="button"
           onClick={handleNewCard}
-          className="w-full rounded-md border border-yellow-500/50 py-1.5 text-xs font-bold text-yellow-400 hover:bg-yellow-500/10 transition-colors"
+          className="w-full rounded-md border border-yellow-500/50 py-1.5 text-xs font-bold text-yellow-600 dark:text-yellow-400 hover:bg-yellow-500/10 transition-colors"
         >
           + New card
         </button>

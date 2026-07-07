@@ -41,8 +41,8 @@ export function PreviewGrid({ goals, onRemove }: PreviewGridProps) {
             ${cell.isFreeSpace
               ? "border-yellow-500/40 bg-yellow-500/10"
               : cell.isEmpty
-                ? "border-zinc-800 bg-zinc-900/30 border-dashed"
-                : "border-zinc-700 bg-zinc-900 group"
+                ? "border-zinc-200 dark:border-zinc-800 bg-zinc-100/30 dark:bg-zinc-900/30 border-dashed"
+                : "border-zinc-300 dark:border-zinc-700 bg-zinc-100 dark:bg-zinc-900 group"
             }
           `}
         >
@@ -51,7 +51,7 @@ export function PreviewGrid({ goals, onRemove }: PreviewGridProps) {
             <button
               onClick={() => onRemove(cell.goalIndex)}
               className="absolute top-0.5 right-0.5 w-4 h-4 sm:w-5 sm:h-5 rounded-full flex items-center justify-center
-                text-zinc-600 hover:text-red-400 hover:bg-zinc-800 transition-colors
+                text-zinc-500 dark:text-zinc-600 hover:text-red-400 hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-colors
                 opacity-0 group-hover:opacity-100 focus:opacity-100 z-10 text-[10px] sm:text-xs"
               aria-label={`Remove "${cell.text}"`}
             >
@@ -63,7 +63,7 @@ export function PreviewGrid({ goals, onRemove }: PreviewGridProps) {
             className={`
               text-[10px] sm:text-xs leading-tight text-center break-words line-clamp-3
               ${cell.isFreeSpace ? "font-bold text-yellow-400 text-sm sm:text-base" : ""}
-              ${cell.isEmpty ? "text-zinc-700 text-[9px] sm:text-[10px]" : "text-zinc-300"}
+              ${cell.isEmpty ? "text-zinc-300 dark:text-zinc-700 text-[9px] sm:text-[10px]" : "text-zinc-700 dark:text-zinc-300"}
             `}
           >
             {cell.isFreeSpace

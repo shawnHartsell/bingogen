@@ -30,7 +30,7 @@ export function MarkdownEditor({
         maxLength={maxLength}
         rows={6}
         placeholder="Write Markdown notes… (supports checklists: - [ ] item)"
-        className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-foreground placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-yellow-400/50 resize-y font-mono"
+        className="w-full rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-foreground placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-yellow-400/50 resize-y font-mono"
       />
       <div className="flex justify-end">
         <span

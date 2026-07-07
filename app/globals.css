@@ -1,7 +1,22 @@
 @import "tailwindcss";
 @plugin "@tailwindcss/typography";
 
+/* Enables `dark:` utilities, scoped to a `.dark` class on an ancestor
+   (typically `<html>`) rather than the OS `prefers-color-scheme`, since the
+   theme is an explicit user choice persisted in localStorage. */
+@variant dark (&:where(.dark, .dark *));
+
+/* Light mode is the root default. Values are hand-picked for legibility
+   against the app's yellow/emerald accent colors, not a straight inversion
+   of the dark palette. */
 :root {
+  --background: #f8f8f7;
+  --foreground: #1c1c21;
+}
+
+/* Dark mode (default on first load - see `DEFAULT_THEME` in lib/theme.ts)
+   preserves the original hardcoded appearance. */
+.dark {
   --background: #0f0f13;
   --foreground: #e4e4e7;
 }

@@ -119,7 +119,7 @@ export function MarkdownPreview({
     <div
       ref={containerRef}
       onClick={handleClick}
-      className="prose prose-sm prose-invert max-w-none prose-headings:text-zinc-100 prose-p:text-zinc-300 prose-strong:text-zinc-200 prose-li:text-zinc-300 prose-a:text-yellow-400 prose-code:text-yellow-300 prose-ul:my-1 prose-ol:my-1 prose-li:my-0.5"
+      className="prose prose-sm dark:prose-invert max-w-none prose-headings:text-zinc-900 dark:prose-headings:text-zinc-100 prose-p:text-zinc-700 dark:prose-p:text-zinc-300 prose-strong:text-zinc-800 dark:prose-strong:text-zinc-200 prose-li:text-zinc-700 dark:prose-li:text-zinc-300 prose-a:text-yellow-600 dark:prose-a:text-yellow-400 prose-code:text-yellow-700 dark:prose-code:text-yellow-300 prose-ul:my-1 prose-ol:my-1 prose-li:my-0.5"
     >
       <ReactMarkdown remarkPlugins={[remarkGfm]} components={components}>
         {content}
