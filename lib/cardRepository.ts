@@ -142,7 +142,7 @@ export function createLocalStorageCardRepository(
       } else {
         cards.push(card);
       }
-      writeCards(storage, [card]);
+      writeCards(storage, cards);
     },
 
     async delete(id) {
