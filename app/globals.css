@@ -1,7 +1,17 @@
 @import "tailwindcss";
 @plugin "@tailwindcss/typography";
+@variant dark (&:where(.dark, .dark *));
 
+/* Light mode (default root values) - legible, warm-neutral palette rather
+   than a straight inversion of the dark theme. */
 :root {
+  --background: #fafafa;
+  --foreground: #18181b;
+}
+
+/* Dark mode (opt-in via the `dark` class on <html>) - preserves the app's
+   original hardcoded appearance. */
+.dark {
   --background: #0f0f13;
   --foreground: #e4e4e7;
 }
